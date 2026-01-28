@@ -1,0 +1,21 @@
+{
+    "name": "毫米波雷达计算器",
+    "short_name": "雷达计算器",
+    "description": "毫米波雷达坐标转换工具（PWA版）",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#f5f5f5",
+    "theme_color": "#2c3e50",
+    "icons": [
+        {
+            "src": "./Data/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "./Data/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

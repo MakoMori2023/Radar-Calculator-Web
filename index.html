@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>毫米波雷达计算器</title>
+    <meta name="description" content="毫米波雷达坐标转换计算器">
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            background-color: #f5f5f5;
+        }
+        .header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .input-area {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        #hexInput {
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+        #calcBtn {
+            width: 100%;
+            padding: 0.8rem;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        #calcBtn:hover {
+            background: #34495e;
+        }
+        .result-area {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .result-title {
+            text-align: center;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .divider {
+            border: none;
+            border-top: 1px solid #ddd;
+            margin: 1rem 0;
+        }
+        .result-item {
+            margin: 0.8rem 0;
+        }
+        .error {
+            color: #e74c3c;
+            margin-top: 1rem;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>毫米波雷达计算器 [Version 1.0]</h1>
+        <p>(c) Akira Amatsume. All rights reserved.</p>
+        <p>您好，欢迎使用我们全新设计的毫米波雷达计算器</p>
+    </div>
+
+    <div class="input-area">
+        <p>现在，请您输入所要计算的坐标数值（6位数的十六进制）</p>
+        <input type="text" id="hexInput" placeholder="例如：1A3F5B">
+        <button id="calcBtn">开始计算</button>
+        <div class="error" id="errorMsg"></div>
+    </div>
+
+    <div class="result-area" id="resultArea">
+        <div class="result-title">转换成功！</div>
+        <hr class="divider">
+        <div class="result-item">
+            <strong>您输入的是:</strong> <span id="inputHex"></span>
+        </div>
+        <div class="result-item">
+            <strong>这是个有效的毫米波坐标</strong>
+        </div>
+        <hr class="divider">
+        <div class="result-item">
+            <strong>X坐标:</strong> <span id="xResult"></span>
+        </div>
+        <div class="result-item">
+            <strong>X坐标二进制:</strong> <span id="xBinary"></span>
+        </div>
+        <hr class="divider">
+        <div class="result-item">
+            <strong>Y坐标:</strong> <span id="yResult"></span>
+        </div>
+        <div class="result-item">
+            <strong>Y坐标二进制:</strong> <span id="yBinary"></span>
+        </div>
+    </div>
+
+    <script>
+        // 核心转换函数（对应Python的hex_to_coordinates）
+        function hexToCoordinates(hexInput) {
+            // 1. 十六进制转24位二进制字符串
+            const decimal = parseInt(hexInput, 16);
+            let binaryStr = decimal.toString(2);
+            // 补零到24位（对应Python的zfill(24)）
+            binaryStr = binaryStr.padStart(24, '0');
+
+            // 2. 取前13位作为X坐标二进制
+            const xBinary = binaryStr.slice(0, 13);
+
+            // 3. 反转二进制字符串后取前10位作为Y坐标二进制
+            const reversedBinary = binaryStr.split('').reverse().join('');
+            const yBinary = reversedBinary.slice(0, 10);
+
+            // 4. 二进制转十进制
+            const xDecimal = parseInt(xBinary, 2);
+            const yDecimal = parseInt(yBinary, 2);
+
+            // 5. 坐标计算
+            const xResult = xDecimal * 0.2 - 500;
+            const yResult = yDecimal * 0.2 - 102.3;
+
+            // 6. 四舍五入转整数后再转二进制
+            const xInt = Math.round(xResult);
+            const yInt = Math.round(yResult);
+            const xResultBinary = xInt.toString(2);
+            const yResultBinary = yInt.toString(2);
+
+            return {
+                xResult: xResult.toFixed(2),
+                yResult: yResult.toFixed(2),
+                xResultBinary: xResultBinary,
+                yResultBinary: yResultBinary
+            };
+        }
+
+        // 页面交互逻辑
+        document.addEventListener('DOMContentLoaded', () => {
+            const hexInput = document.getElementById('hexInput');
+            const calcBtn = document.getElementById('calcBtn');
+            const errorMsg = document.getElementById('errorMsg');
+            const resultArea = document.getElementById('resultArea');
+            const inputHex = document.getElementById('inputHex');
+            const xResult = document.getElementById('xResult');
+            const xBinary = document.getElementById('xBinary');
+            const yResult = document.getElementById('yResult');
+            const yBinary = document.getElementById('yBinary');
+
+            // 注册Service Worker（PWA核心）
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('service-worker.js')
+                        .then(registration => {
+                            console.log('ServiceWorker 注册成功:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.log('ServiceWorker 注册失败:', error);
+                        });
+                });
+            }
+
+            // 计算按钮点击事件
+            calcBtn.addEventListener('click', () => {
+                const inputVal = hexInput.value.trim().toUpperCase();
+                // 重置状态
+                errorMsg.style.display = 'none';
+                resultArea.style.display = 'none';
+
+                // 验证输入
+                if (inputVal.length !== 6) {
+                    errorMsg.textContent = '错误：请输入6位十六进制数！';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                // 验证是否为有效十六进制
+                const hexRegex = /^[0-9A-F]{6}$/;
+                if (!hexRegex.test(inputVal)) {
+                    errorMsg.textContent = '错误：请输入有效的十六进制数！';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                // 执行转换
+                const result = hexToCoordinates(inputVal);
+
+                // 展示结果
+                inputHex.textContent = inputVal;
+                xResult.textContent = result.xResult;
+                xBinary.textContent = result.xResultBinary;
+                yResult.textContent = result.yResult;
+                yBinary.textContent = result.yResultBinary;
+                resultArea.style.display = 'block';
+            });
+        });
+    </script>
+</body>
+</html>
